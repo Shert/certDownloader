@@ -1,4 +1,4 @@
-$version="1.0.1"
+$version="1.0.1a"
 
 Write-Output("Starting certDownloader vers $version")
 
@@ -87,6 +87,10 @@ foreach ( $cn in  $certificates)
             $certFriendlyName = "$cn"+ "_" + "$certFileThumbprint"
             $certPathOnSTore = "$CSLocation" + "\" + "$certFileThumbprint"
             (Get-ChildItem -Path $certPathOnSTore).FriendlyName = "$certFriendlyName"
+         }
+         else
+         {
+            Write-Output("esiste gia' un certificato con thumbprint $certFileThumbprint sul keystore nel path $CSLocation")
          }
       }
       else
