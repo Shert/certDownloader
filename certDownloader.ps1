@@ -1,4 +1,4 @@
-$version="1.0.2"
+$version="1.0.2.a"
 
 Write-Output("Starting certDownloader vers $version")
 
@@ -79,7 +79,7 @@ foreach ( $cn in  $certificates)
    ### verifico due cose : 
    ### 1. se esiste un file full.pfx nel path relativo al certificato che sto lavorando
    ### 2. se il cn no ne' tra quelli da skippare'
-   if  ((Test-Path -Path  "$certFullPath" -PathType leaf) -and ($skipCN -eq False) )
+   if  ((Test-Path -Path  "$certFullPath" -PathType leaf) -and ($skipCN -eq $false) )
    {   
       Write-Output("provo ad importare : $cn")
       ### carico in un oggetto di tipo certificato i dati del file scaricato
