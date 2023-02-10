@@ -1,4 +1,4 @@
-$version="1.0.2.a"
+$version="1.0.2.b"
 
 Write-Output("Starting certDownloader vers $version")
 
@@ -76,41 +76,47 @@ foreach ( $cn in  $certificates)
    ### verifico se il cn e' presente nella lista di quelli da skippare
    $skipCN = ($skipThis.Contains($cn)) 
    
-   ### verifico due cose : 
-   ### 1. se esiste un file full.pfx nel path relativo al certificato che sto lavorando
-   ### 2. se il cn no ne' tra quelli da skippare'
-   if  ((Test-Path -Path  "$certFullPath" -PathType leaf) -and ($skipCN -eq $false) )
-   {   
-      Write-Output("provo ad importare : $cn")
-      ### carico in un oggetto di tipo certificato i dati del file scaricato
-      $myCert = Get-PfxData -FilePath $certFullPath -Password $pfxPassPwsh
-      if ($myCert)
-      {
-         ### ricavo il thumbprint del certificato in localdepot
-         $certFileThumbprint = $myCert.EndEntityCertificates.Thumbprint
-         ### cerco sul certificate store di sistema un certificato con quel preciso thumbprint
-         $certOnStore = Get-ChildItem -Path $CSLocation | Where-Object {$_.Thumbprint -Match "$certFileThumbprint"}
-         ### se non trovo nulla importo il certificato
-         if (-not ($certOnStore))
+   ### verifico se il cn e' tra quelli da skippare'
+   if  ($skipCN -eq $false)
+   {
+      ### verifico se esiste un file full.pfx nel path relativo al certificato che sto lavorando
+      if  ((Test-Path -Path  "$certFullPath" -PathType leaf) -and ($skipCN -eq $false) )
+      {   
+         Write-Output("provo ad importare : $cn")
+         ### carico in un oggetto di tipo certificato i dati del file scaricato
+         $myCert = Get-PfxData -FilePath $certFullPath -Password $pfxPassPwsh
+         if ($myCert)
          {
-            Import-PfxCertificate -FilePath "$certFullPath"  -CertStoreLocation "$CSLocation" -Password $pfxPassPwsh
-            ### assegno un friendly name al certificato appena importato
-            $certFriendlyName = "$cn"+ "_" + "$certFileThumbprint"
-            $certPathOnSTore = "$CSLocation" + "\" + "$certFileThumbprint"
-            (Get-ChildItem -Path $certPathOnSTore).FriendlyName = "$certFriendlyName"
+            ### ricavo il thumbprint del certificato in localdepot
+            $certFileThumbprint = $myCert.EndEntityCertificates.Thumbprint
+            ### cerco sul certificate store di sistema un certificato con quel preciso thumbprint
+            $certOnStore = Get-ChildItem -Path $CSLocation | Where-Object {$_.Thumbprint -Match "$certFileThumbprint"}
+            ### se non trovo nulla importo il certificato
+            if (-not ($certOnStore))
+            {
+               Import-PfxCertificate -FilePath "$certFullPath"  -CertStoreLocation "$CSLocation" -Password $pfxPassPwsh
+               ### assegno un friendly name al certificato appena importato
+               $certFriendlyName = "$cn"+ "_" + "$certFileThumbprint"
+               $certPathOnSTore = "$CSLocation" + "\" + "$certFileThumbprint"
+               (Get-ChildItem -Path $certPathOnSTore).FriendlyName = "$certFriendlyName"
+            }
+            else
+            {
+               Write-Output("esiste gia' un certificato con thumbprint $certFileThumbprint sul keystore nel path $CSLocation")
+            }
          }
          else
          {
-            Write-Output("esiste gia' un certificato con thumbprint $certFileThumbprint sul keystore nel path $CSLocation")
+            Write-Output("non riesco a leggere i dati da $certFullPath")
          }
       }
       else
       {
-         Write-Output("non riesco a leggere i dati da $certFullPath")
+         Write-Output("non trovo un file $certDepot\${cn}\full.pfx")
       }
    }
    else
    {
-      Write-Output("non trovo un file $certDepot\${cn}\full.pfx")
+      Write-Output("non faccio verifiche per ${cn}")
    }
 }
