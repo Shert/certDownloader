@@ -1,4 +1,4 @@
-$version="1.0.1a"
+$version="1.0.2"
 
 Write-Output("Starting certDownloader vers $version")
 
@@ -9,6 +9,9 @@ $pfxPassPwsh = ConvertTo-SecureString -String "$pfxPassClear" -Force -AsPlainTex
 
 ### path del CertStoreLocation sul server
 $CSLocation = 'Cert:\LocalMachine\My'
+
+### cert da skippare
+$skipThis=@('iistargetinfo.data')
 
 ### un file che contiene una riga per ogni certificato (CN) da scaricare
 $certList = 'c:\EngScripts\certDownloader\certDownloader.ps1.list'
@@ -58,7 +61,15 @@ if ( -Not (Test-Path -Path $certDepot ) )
 }
 
 ### se arrivo qui ho sorpassato tutti i test iniziali
-$certificates = Get-Content -Path $certList
+
+### metto in un oggetto arraylist il contenuto del file $certList
+[System.Collections.ArrayList]$certificates = Get-Content -Path $certList
+
+### rimuovo dall'arraylist gli elementi da "skippare"
+foreach ( $this in $skipThis )
+{
+   $certificates.Remove($this)
+}
 
 foreach ( $cn in  $certificates)
 {
