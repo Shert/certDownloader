@@ -1,4 +1,4 @@
-$version="1.0.3"
+$version="1.0.3.a"
 
 Write-Output("Starting certDownloader vers $version")
 
@@ -12,13 +12,16 @@ if ( -Not (Test-Path -Path $confFile) )
    Exit 2
 }
 
-### leggo il contenuto del file e salvo tutto in un associative array
-$ExternalVariables = Get-Content -raw -Path $confFile | ConvertFrom-StringData
+### leggo il contenuto del file e salvo delle variabili
+Get-Content $confFile | Where-Object {$_.length -gt 0} | Where-Object {!$_.StartsWith("#")} | ForEach-Object {
+
+    $var = $_.Split('=',2).Trim()
+    New-Variable -Scope Script -Name $var[0] -Value $var[1]
+    }
 
 ### verifo se sono impostate tutte le variabili che servono
-if ($ExternalVariables.containsKey('pfxPassEnc'))
+if ($pfxPassEnc)
 {
-   $pfxPassEnc =  $ExternalVariables.pfxPassEnc
    $pfxPassClear = [System.Text.Encoding]::Unicode.GetString([System.Convert]::FromBase64String($pfxPassEnc))
    $pfxPassPwsh = ConvertTo-SecureString -String "$pfxPassClear" -Force -AsPlainText
 }
@@ -28,21 +31,16 @@ else
    Exit 2
 }
 
-if ($ExternalVariables.containsKey('CSLocation'))
-{
-   $CSLocation =  $ExternalVariables.CSLocation
-}
-else
+if (-Not ($CSLocation))
 {
    Write-Output("Errore: il file di configurazione $confFile non contiene un valore per CSLocation")
    Exit 2
 }
 
-if ($ExternalVariables.containsKey('skipThese'))
+if ($skipTheseCSV)
 {
    $skipThese = @()
-   $stringSkip = $ExternalVariables.skipThese
-   $arrSkip = $stringSkip.split(',')
+   $arrSkip = $skipTheseCSV.split(',')
    foreach ($element in $arrSkip)
    {
       $skipThese += $element
@@ -53,61 +51,37 @@ else
    $skipThese = @()
 }
 
-if ($ExternalVariables.containsKey('certList'))
-{
-   $CSLocation =  $ExternalVariables.certList
-}
-else
+if (-Not ($certList))
 {
    Write-Output("Errore: il file di configurazione $confFile non contiene un valore per certList")
    Exit 2
 }
 
-if ($ExternalVariables.containsKey('certDepot'))
-{
-   $CSLocation =  $ExternalVariables.certDepot
-}
-else
+if (-Not ($CSLocation))
 {
    Write-Output("Errore: il file di configurazione $confFile non contiene un valore per certDepot")
    Exit 2
 }
 
-if ($ExternalVariables.containsKey('pscp'))
-{
-   $CSLocation =  $ExternalVariables.pscp
-}
-else
+if (-Not ($pscp))
 {
    Write-Output("Errore: il file di configurazione $confFile non contiene un valore per pscp")
    Exit 2
 }
 
-if ($ExternalVariables.containsKey('sftpUser'))
-{
-   $CSLocation =  $ExternalVariables.sftpUser
-}
-else
+if (-Not ($sftpUser))
 {
    Write-Output("Errore: il file di configurazione $confFile non contiene un valore per sftpUser")
    Exit 2
 }
 
-if ($ExternalVariables.containsKey('sftpHost'))
-{
-   $CSLocation =  $ExternalVariables.sftpHost
-}
-else
+if (-Not ($sftpHost))
 {
    Write-Output("Errore: il file di configurazione $confFile non contiene un valore per sftpHost")
    Exit 2
 }
 
-if ($ExternalVariables.containsKey('sftpCert'))
-{
-   $CSLocation =  $ExternalVariables.sftpCert
-}
-else
+if (-Not ($sftpCert))
 {
    Write-Output("Errore: il file di configurazione $confFile non contiene un valore per sftpCert")
    Exit 2
