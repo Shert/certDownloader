@@ -63,13 +63,7 @@ if ( -Not (Test-Path -Path $certDepot ) )
 ### se arrivo qui ho sorpassato tutti i test iniziali
 
 ### metto in un oggetto arraylist il contenuto del file $certList
-[System.Collections.ArrayList]$certificates = Get-Content -Path $certList
-
-### rimuovo dall'arraylist gli elementi da "skippare"
-foreach ( $this in $skipThis )
-{
-   $certificates.Remove($this)
-}
+$certificates = Get-Content -Path $certList
 
 foreach ( $cn in  $certificates)
 {
@@ -77,9 +71,15 @@ foreach ( $cn in  $certificates)
    ##c:\EngScripts\bin\pscp.exe -r -l ${sftpUser} -i ${sftpCert} -C ${sftpHost}:/${cn} ${certDepot}"
    & "$pscp" -r -l ${sftpUser} -i ${sftpCert} -C ${sftpHost}:/${cn} ${certDepot}
    
-   $certFullPath = "$certDepot" + "\" + "$cn" + "\full.pfx" 
-   ### verifico se esiste un file full.pfx nel path relativo al certificato che sto lavorando
-   if  (Test-Path -Path  "$certFullPath" -PathType leaf)
+   $certFullPath = "$certDepot" + "\" + "$cn" + "\full.pfx"
+   
+   ### verifico se il cn e' presente nella lista di quelli da skippare
+   $skipCN = ($skipThis.Contains($cn)) 
+   
+   ### verifico due cose : 
+   ### 1. se esiste un file full.pfx nel path relativo al certificato che sto lavorando
+   ### 2. se il cn no ne' tra quelli da skippare'
+   if  ((Test-Path -Path  "$certFullPath" -PathType leaf) -and ($skipCN -eq False) )
    {   
       Write-Output("provo ad importare : $cn")
       ### carico in un oggetto di tipo certificato i dati del file scaricato
