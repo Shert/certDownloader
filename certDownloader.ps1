@@ -1,32 +1,119 @@
-$version="1.0.2.b"
+$version="1.0.3"
 
 Write-Output("Starting certDownloader vers $version")
 
-### password base64 encoded
-$pfxPassEnc='xxx_inserire_qui_la_password_codificata_in_base64'
-$pfxPassClear = [System.Text.Encoding]::Unicode.GetString([System.Convert]::FromBase64String($pfxPassEnc))
-$pfxPassPwsh = ConvertTo-SecureString -String "$pfxPassClear" -Force -AsPlainText
+$confFile='c:\EngScripts\certDownloader\certDownloader.ps1.conf'
 
-### path del CertStoreLocation sul server
-$CSLocation = 'Cert:\LocalMachine\My'
+$confExists=(Test-Path -Path $confFile)
 
-### cert da skippare
-$skipThis=@('iistargetinfo.data')
+if ( -Not (Test-Path -Path $confFile) )
+{
+   Write-Output("Errore: impossibile trovare il file di configurazione $confFile")
+   Exit 2
+}
 
-### un file che contiene una riga per ogni certificato (CN) da scaricare
-$certList = 'c:\EngScripts\certDownloader\certDownloader.ps1.list'
+### leggo il contenuto del file e salvo tutto in un associative array
+$ExternalVariables = Get-Content -raw -Path $confFile | ConvertFrom-StringData
 
-### la directory locale in cui conservare i files
-$certDepot = 'c:\EngScripts\certDownloader\localDepot'
+### verifo se sono impostate tutte le variabili che servono
+if ($ExternalVariables.containsKey('pfxPassEnc'))
+{
+   $pfxPassEnc =  $ExternalVariables.pfxPassEnc
+   $pfxPassClear = [System.Text.Encoding]::Unicode.GetString([System.Convert]::FromBase64String($pfxPassEnc))
+   $pfxPassPwsh = ConvertTo-SecureString -String "$pfxPassClear" -Force -AsPlainText
+}
+else
+{
+   Write-Output("Errore: il file di configurazione $confFile non contiene un valore per pfxPassEnc")
+   Exit 2
+}
 
-### il percorso di pscp.exe
-$pscp = 'c:\EngScripts\bin\pscp.exe'
+if ($ExternalVariables.containsKey('CSLocation'))
+{
+   $CSLocation =  $ExternalVariables.CSLocation
+}
+else
+{
+   Write-Output("Errore: il file di configurazione $confFile non contiene un valore per CSLocation")
+   Exit 2
+}
 
-### il percorso della chiave privata certdepot in formato putty
-$sftpCert = 'c:\EngScripts\certDownloader\certdepot.ppk'
+if ($ExternalVariables.containsKey('skipThese'))
+{
+   $skipThese = @()
+   $stringSkip = $ExternalVariables.skipThese
+   $arrSkip = $stringSkip.split(',')
+   foreach ($element in $arrSkip)
+   {
+      $skipThese += $element
+   }
+}
+else
+{
+   $skipThese = @()
+}
 
-$sftpUser = 'xxx_inserire_qui_la_userxxx'
-$sftpHost = 'xxx_inserrire_qui_ip_o_fqdn_da_cui_copiare_i_certificati'
+if ($ExternalVariables.containsKey('certList'))
+{
+   $CSLocation =  $ExternalVariables.certList
+}
+else
+{
+   Write-Output("Errore: il file di configurazione $confFile non contiene un valore per certList")
+   Exit 2
+}
+
+if ($ExternalVariables.containsKey('certDepot'))
+{
+   $CSLocation =  $ExternalVariables.certDepot
+}
+else
+{
+   Write-Output("Errore: il file di configurazione $confFile non contiene un valore per certDepot")
+   Exit 2
+}
+
+if ($ExternalVariables.containsKey('pscp'))
+{
+   $CSLocation =  $ExternalVariables.pscp
+}
+else
+{
+   Write-Output("Errore: il file di configurazione $confFile non contiene un valore per pscp")
+   Exit 2
+}
+
+if ($ExternalVariables.containsKey('sftpUser'))
+{
+   $CSLocation =  $ExternalVariables.sftpUser
+}
+else
+{
+   Write-Output("Errore: il file di configurazione $confFile non contiene un valore per sftpUser")
+   Exit 2
+}
+
+if ($ExternalVariables.containsKey('sftpHost'))
+{
+   $CSLocation =  $ExternalVariables.sftpHost
+}
+else
+{
+   Write-Output("Errore: il file di configurazione $confFile non contiene un valore per sftpHost")
+   Exit 2
+}
+
+if ($ExternalVariables.containsKey('sftpCert'))
+{
+   $CSLocation =  $ExternalVariables.sftpCert
+}
+else
+{
+   Write-Output("Errore: il file di configurazione $confFile non contiene un valore per sftpCert")
+   Exit 2
+}
+
+#### fine del caricamento valori da file
 
 if ( -Not (Test-Path -Path $pscp) )
 {
@@ -74,7 +161,7 @@ foreach ( $cn in  $certificates)
    $certFullPath = "$certDepot" + "\" + "$cn" + "\full.pfx"
    
    ### verifico se il cn e' presente nella lista di quelli da skippare
-   $skipCN = ($skipThis.Contains($cn)) 
+   $skipCN = ($skipThese.Contains($cn)) 
    
    ### verifico se il cn e' tra quelli da skippare'
    if  ($skipCN -eq $false)
